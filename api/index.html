@@ -36,7 +36,6 @@
       flex-direction: column;
     }
 
-    /* ── Header ── */
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -85,7 +84,6 @@
       letter-spacing: 0.03em;
     }
 
-    /* ── Layout ── */
     .app {
       display: flex;
       flex: 1;
@@ -96,7 +94,6 @@
       padding: 0 16px;
     }
 
-    /* ── Chat area ── */
     #chat {
       flex: 1;
       overflow-y: auto;
@@ -152,7 +149,6 @@
       border-bottom-right-radius: 4px;
     }
 
-    /* ── Triage card ── */
     .triage-card {
       border-radius: var(--radius);
       border: 1px solid var(--border);
@@ -213,20 +209,18 @@
       background: var(--bg);
     }
 
-    /* Level colors */
-    .level-mild   { background: var(--mild-bg); }
-    .level-mild   .triage-header { color: var(--mild); }
-    .level-mild   .badge { background: var(--mild); color: #fff; }
+    .level-mild     { background: var(--mild-bg); }
+    .level-mild     .triage-header { color: var(--mild); }
+    .level-mild     .badge { background: var(--mild); color: #fff; }
 
     .level-moderate { background: var(--mod-bg); }
     .level-moderate .triage-header { color: var(--mod); }
     .level-moderate .badge { background: var(--mod); color: #fff; }
 
-    .level-severe { background: var(--sev-bg); }
-    .level-severe .triage-header { color: var(--sev); }
-    .level-severe .badge { background: var(--sev); color: #fff; }
+    .level-severe   { background: var(--sev-bg); }
+    .level-severe   .triage-header { color: var(--sev); }
+    .level-severe   .badge { background: var(--sev); color: #fff; }
 
-    /* ── Typing indicator ── */
     .typing .bubble {
       display: flex;
       gap: 5px;
@@ -248,7 +242,6 @@
       30%            { transform: translateY(-6px); }
     }
 
-    /* ── Input bar ── */
     .input-bar {
       padding: 16px 0 24px;
       display: flex;
@@ -290,10 +283,8 @@
     #send-btn:hover   { background: #165a4c; }
     #send-btn:active  { transform: scale(0.95); }
     #send-btn:disabled { background: var(--border); cursor: not-allowed; }
-
     #send-btn svg { width: 20px; height: 20px; fill: #fff; }
 
-    /* ── Reset button ── */
     .reset-btn {
       background: none;
       border: 1px solid var(--border);
@@ -313,10 +304,7 @@
       padding: 8px 0 4px;
     }
 
-    .input-hint {
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
+    .input-hint { font-size: 0.75rem; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -347,69 +335,17 @@
 </div>
 
 <script>
-  const GROQ_API_KEY = ""; 
-  const MODEL        = "llama-3.3-70b-versatile";
-
-  const SYSTEM_PROMPT = `You are MediRoute, a healthcare triage assistant that helps users determine 
-the urgency of their symptoms and recommend the appropriate healthcare facility.
-
-## LANGUAGE
-- Detect the user's language automatically and respond in the same language
-- If user writes in Bahasa Indonesia → respond in Bahasa Indonesia
-- If user writes in English → respond in English
-- Maintain the same language throughout the conversation
-- Use friendly, casual but professional tone
-- Avoid overly technical medical jargon
-
-## CONVERSATION FLOW
-1. Greet the user and ask them to describe their symptoms
-2. Ask follow-up questions ONE AT A TIME (max 4 questions total):
-   - Pain/discomfort severity (scale 1-10)
-   - Duration of symptoms
-   - Accompanying symptoms (fever, vomiting, difficulty breathing, etc.)
-   - Previous medication taken
-3. After gathering enough info, give triage assessment
-4. Recommend appropriate facility
-
-## TRIAGE LEVELS
-🟢 MILD - Symptoms are mild, no immediate danger
-→ Recommend: Rest at home, pharmacy (apotek)
-
-🟡 MODERATE - Symptoms need medical attention but not emergency
-→ Recommend: Puskesmas or klinik umum
-
-🔴 SEVERE - Symptoms are severe or potentially dangerous
-→ Recommend: Rumah Sakit or IGD immediately
-
-## TRIAGE OUTPUT FORMAT
-After assessment, always output in this exact format:
-
-TRIAGE_RESULT:
-- Level: [MILD/MODERATE/SEVERE]
-- Reason: [brief explanation in English]
-- Recommendation: [type of facility in English]
-- Message: [caring closing message in English]
-
-## IMPORTANT RULES
-- You are NOT a doctor, always add disclaimer
-- For SEVERE cases, urge user to seek help immediately
-- Never diagnose specific diseases, only assess urgency
-- If user mentions chest pain, difficulty breathing, or stroke symptoms → immediately classify as SEVERE
-- Always be empathetic and reassuring`;
-
   let history = [];
 
-  const chat      = document.getElementById("chat");
-  const input     = document.getElementById("user-input");
-  const sendBtn   = document.getElementById("send-btn");
+  const chat    = document.getElementById("chat");
+  const input   = document.getElementById("user-input");
+  const sendBtn = document.getElementById("send-btn");
 
-  // Auto-resize textarea
   input.addEventListener("input", () => {
     input.style.height = "auto";
     input.style.height = Math.min(input.scrollHeight, 120) + "px";
   });
 
-  // Send on Enter (Shift+Enter = newline)
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
@@ -422,7 +358,6 @@ TRIAGE_RESULT:
       <div class="bubble">${text}</div>`;
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
-    return div;
   }
 
   function showTyping() {
@@ -457,11 +392,11 @@ TRIAGE_RESULT:
   }
 
   function renderTriage(triage) {
-    const icons  = { MILD: "🟢", MODERATE: "🟡", SEVERE: "🔴" };
-    const cls    = { MILD: "level-mild", MODERATE: "level-moderate", SEVERE: "level-severe" };
-    const level  = triage.level || "UNKNOWN";
-    const icon   = icons[level] || "⚪";
-    const klass  = cls[level]   || "";
+    const icons = { MILD: "🟢", MODERATE: "🟡", SEVERE: "🔴" };
+    const cls   = { MILD: "level-mild", MODERATE: "level-moderate", SEVERE: "level-severe" };
+    const level = triage.level || "UNKNOWN";
+    const icon  = icons[level] || "⚪";
+    const klass = cls[level]   || "";
 
     const card = document.createElement("div");
     card.className = `triage-card ${klass}`;
@@ -485,31 +420,25 @@ TRIAGE_RESULT:
         </div>
       </div>
       <div class="disclaimer">⚠️ MediRoute is not a substitute for professional medical advice. Always consult a doctor.</div>`;
-
     chat.appendChild(card);
     chat.scrollTop = chat.scrollHeight;
   }
 
-  async function callGroq(messages) {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  async function callAPI(messages) {
+    const res = await fetch("/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${GROQ_API_KEY}`
-      },
-      body: JSON.stringify({ model: MODEL, messages, temperature: 0.7 })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages })
     });
     const data = await res.json();
-    return data.choices[0].message.content;
+    if (data.error) throw new Error(data.error);
+    return data.reply;
   }
 
   async function init() {
     sendBtn.disabled = true;
     showTyping();
-    const greeting = await callGroq([
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user",   content: "Hello" }
-    ]);
+    const greeting = await callAPI([{ role: "user", content: "Hello" }]);
     removeTyping();
     history.push({ role: "assistant", content: greeting });
     appendMsg("bot", greeting);
@@ -529,11 +458,7 @@ TRIAGE_RESULT:
     sendBtn.disabled = true;
     showTyping();
 
-    const reply = await callGroq([
-      { role: "system", content: SYSTEM_PROMPT },
-      ...history
-    ]);
-
+    const reply = await callAPI(history);
     removeTyping();
     history.push({ role: "assistant", content: reply });
 
