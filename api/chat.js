@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -7,10 +6,50 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { messages } = req.body;
-  if (!messages) return res.status(400).json({ error: "Messages required" });
+  const { messages, action, lat, lng, triageLevel } = req.body;
 
-  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  const GROQ_API_KEY        = process.env.GROQ_API_KEY;
+  const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+
+  // ── Action: find nearby facilities ──────────────────────────────────────
+  if (action === "find_facilities") {
+    if (!GOOGLE_MAPS_API_KEY) return res.status(500).json({ error: "Maps API key not configured" });
+    if (!lat || !lng)         return res.status(400).json({ error: "Location required" });
+
+    const keywords = {
+      MILD:     "apotek farmasi",
+      MODERATE: "puskesmas klinik",
+      SEVERE:   "rumah sakit IGD"
+    };
+
+    const level   = triageLevel || "MODERATE";
+    const keyword = keywords[level] || keywords.MODERATE;
+    const radius  = level === "SEVERE" ? 5000 : 3000;
+
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&keyword=${encodeURIComponent(keyword)}&language=id&key=${GOOGLE_MAPS_API_KEY}`;
+
+    const response = await fetch(url);
+    const data     = await response.json();
+
+    if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+      return res.status(500).json({ error: `Maps API error: ${data.status}` });
+    }
+
+    const facilities = (data.results || []).slice(0, 3).map(place => ({
+      name:    place.name,
+      address: place.vicinity,
+      rating:  place.rating || null,
+      open:    place.opening_hours?.open_now ?? null,
+      lat:     place.geometry.location.lat,
+      lng:     place.geometry.location.lng,
+      mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`
+    }));
+
+    return res.status(200).json({ facilities });
+  }
+
+  // ── Action: chat ─────────────────────────────────────────────────────────
+  if (!messages) return res.status(400).json({ error: "Messages required" });
   if (!GROQ_API_KEY) return res.status(500).json({ error: "API key not configured" });
 
   const SYSTEM_PROMPT = `You are MediRoute, a healthcare triage assistant that helps users determine 
@@ -77,7 +116,7 @@ TRIAGE_RESULT:
       })
     });
 
-    const data = await response.json();
+    const data  = await response.json();
     const reply = data.choices[0].message.content;
     res.status(200).json({ reply });
 
